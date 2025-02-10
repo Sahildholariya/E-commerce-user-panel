@@ -1,249 +1,132 @@
-import { useState, useEffect } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { ShoppingCartIcon, Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import React, { useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { toast, ToastContainer } from 'react-toastify'
 
 const Navbar = () => {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [cartCount, setCartCount] = useState(0); // State to track cart count
-  const navigate = useNavigate();
+    const [isLogin, setIsLogin] = useState(false)
+    const [cartItemCount, setCartItemCount] = useState(0)
 
-  useEffect(() => {
-    const user = localStorage.getItem('user');
-    if (user) {
-      setIsLoggedIn(true);
+    const navigate = useNavigate()
 
+    const handlNavigate = () => {
+        if (!isLogin) {
+            toast.warning("You Are Not Logged in...!", {
+                position: "bottom-right",
+            });
 
-      const cartKey = `cart_${JSON.parse(user).id}`;
-      const cart = JSON.parse(localStorage.getItem(cartKey)) || [];
-      setCartCount(cart.length);
-      
-    } else {
-      setIsLoggedIn(false);
-      setCartCount(0);
+            setTimeout(() => {
+                navigate('/login')
+            }, 3000);
+            return;
+        } else {
+            navigate('/cart')
+            return;
+        }
     }
-  }, []); 
 
-  const handleCartClick = (e) => {
-    e.preventDefault();
-    if (!isLoggedIn) {
-      navigate('/login');
-    } else {
-      navigate('/cart');
+    const handlNavigateLogin = () => {
+        if (!isLogin) {
+            navigate('/login')
+        } else {
+            navigate('/profile')
+        }
     }
-  };
 
-  return (
-    <div>
-      <nav className="bg-white shadow-md">
-        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-          {/* Logo */}
-          <div className="text-2xl font-bold text-indigo-600">
-            <Link to="/">ShopLogo</Link>
-          </div>
+    useEffect(() => {
+        const user = JSON.parse(localStorage.getItem('user'))
+        if (user) {
+            setIsLogin(true)
+            
+            // Update cart item count
+            const cartKey = `cart_${user.id}`;
+            const savedCart = JSON.parse(localStorage.getItem(cartKey)) || [];
+            setCartItemCount(savedCart.length);
+        }
 
-          {/* Desktop Navigation Links */}
-          <div className="hidden md:flex space-x-8">
-            <NavLink
-              to="/"
-              className={({ isActive }) =>
-                isActive
-                  ? 'text-indigo-600 font-semibold transition duration-300'
-                  : 'text-gray-700 hover:text-indigo-600 transition duration-300'
-              }
-            >
-              Home
-            </NavLink>
-            <NavLink
-              to="/shop"
-              className={({ isActive }) =>
-                isActive
-                  ? 'text-indigo-600 font-semibold transition duration-300'
-                  : 'text-gray-700 hover:text-indigo-600 transition duration-300'
-              }
-            >
-              Shop
-            </NavLink>
-            <NavLink
-              to="/about"
-              className={({ isActive }) =>
-                isActive
-                  ? 'text-indigo-600 font-semibold transition duration-300'
-                  : 'text-gray-700 hover:text-indigo-600 transition duration-300'
-              }
-            >
-              About
-            </NavLink>
-            <NavLink
-              to="/contact"
-              className={({ isActive }) =>
-                isActive
-                  ? 'text-indigo-600 font-semibold transition duration-300'
-                  : 'text-gray-700 hover:text-indigo-600 transition duration-300'
-              }
-            >
-              Contact
-            </NavLink>
-          </div>
+        // Listen for cart updates in localStorage
+        const handleStorageChange = (e) => {
+            if (e.key && e.key.startsWith('cart_')) {
+                const savedCart = JSON.parse(e.newValue) || [];
+                setCartItemCount(savedCart.length);
+            }
+        }
 
-          {/* Cart and Login/Signup */}
-          <div className="hidden md:flex items-center space-x-4">
-            <Link onClick={handleCartClick} className="relative">
-              <ShoppingCartIcon className="h-8 w-8 text-gray-700 hover:text-indigo-600 transition duration-300" />
-              {/* Cart badge */}
-              {cartCount > 0 ? (
-                <span className="absolute top-[-5px] right-0 inline-flex items-center justify-center px-1 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full text-[10px]">
-                  {cartCount}
-                </span>
-              ) : (
-                <span className="absolute top-[-5px] right-0 inline-flex items-center justify-center px-1 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full text-[10px]">
-                0
-              </span>
-              )
-              }
-            </Link>
+        window.addEventListener('storage', handleStorageChange);
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+        }
+    }, [])
 
-            {!isLoggedIn ? (
-              <>
-                <NavLink
-                  to="/login"
-                  className={({ isActive }) =>
-                    isActive
-                      ? 'text-indigo-600 font-semibold transition duration-300'
-                      : 'text-gray-700 hover:text-indigo-600 transition duration-300'
-                  }
-                >
-                  Login
-                </NavLink>
-                
-                <NavLink
-                  to="/register"
-                  className={({ isActive }) =>
-                    isActive
-                      ? 'bg-indigo-700 text-white px-4 py-2 rounded-md transition duration-300'
-                      : 'bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition duration-300'
-                  }
-                >
-                  Sign Up
-                </NavLink>
-              </>
-            ) : (
-              <NavLink
-                to="/welcome"
-                className={({ isActive }) =>
-                  isActive
-                    ? 'text-indigo-600 font-semibold transition duration-300'
-                    : 'text-gray-700 hover:text-indigo-600 transition duration-300'
-                }
-              >
-                Profile
-              </NavLink>
-            )}
-          </div>
+    return (
+        <header className="bg-white shadow-md">
+            {/* Topbar */}
+            <div className="bg-gray-100 py-2">
+                <div className="container mx-auto flex justify-between items-center px-4">
+                    <div className="text-sm text-gray-600">
+                        Free shipping for standard orders over $100
+                    </div>
+                    <div className="flex space-x-4 text-sm text-gray-600">
+                        <a href="#" className="hover:text-gray-900 transition">Help & FAQs</a>
+                        <a href="#" className="hover:text-gray-900 transition">My Account</a>
+                        <a href="#" className="hover:text-gray-900 transition">EN</a>
+                        <a href="#" className="hover:text-gray-900 transition">USD</a>
+                    </div>
+                </div>
+            </div>
 
-          {/* Mobile Menu Button */}
-          <div className="md:hidden">
-            <button onClick={() => setMenuOpen(!menuOpen)} className="text-gray-700 hover:text-indigo-600 focus:outline-none">
-              {menuOpen ? (
-                <XMarkIcon className="h-8 w-8" />
-              ) : (
-                <Bars3Icon className="h-8 w-8" />
-              )}
-            </button>
-          </div>
-        </div>
+            {/* Main Header */}
+            <div className="container mx-auto flex items-center justify-between py-4 px-4">
+                {/* Logo */}
+                <a href="#" className="text-xl font-bold">
+                    <img src="images/icons/logo-01.png" alt="Logo" className="w-32" />
+                </a>
 
-        {/* Mobile Navigation Links */}
-        {menuOpen && (
-          <div className="md:hidden px-4 py-3 space-y-2">
-            <NavLink
-              to="/"
-              className={({ isActive }) =>
-                isActive
-                  ? 'block text-indigo-600 font-semibold transition duration-300'
-                  : 'block text-gray-700 hover:text-indigo-600 transition duration-300'
-              }
-              onClick={() => setMenuOpen(false)}
-            >
-              Home
-            </NavLink>
-            <NavLink
-              to="/shop"
-              className={({ isActive }) =>
-                isActive
-                  ? 'block text-indigo-600 font-semibold transition duration-300'
-                  : 'block text-gray-700 hover:text-indigo-600 transition duration-300'
-              }
-              onClick={() => setMenuOpen(false)}
-            >
-              Shop
-            </NavLink>
-            <NavLink
-              to="/about"
-              className={({ isActive }) =>
-                isActive
-                  ? 'block text-indigo-600 font-semibold transition duration-300'
-                  : 'block text-gray-700 hover:text-indigo-600 transition duration-300'
-              }
-              onClick={() => setMenuOpen(false)}
-            >
-              About
-            </NavLink>
-            <NavLink
-              to="/contact"
-              className={({ isActive }) =>
-                isActive
-                  ? 'block text-indigo-600 font-semibold transition duration-300'
-                  : 'block text-gray-700 hover:text-indigo-600 transition duration-300'
-              }
-              onClick={() => setMenuOpen(false)}
-            >
-              Contact
-            </NavLink>
+                {/* Navigation Menu */}
+                <nav className="hidden lg:flex space-x-8">
+                    <a href="/" className="text-gray-700 hover:text-gray-900 transition">Home</a>
+                    <a href="/product" className="text-gray-700 hover:text-gray-900 transition">Shop</a>
+                    <a href="/" className="text-gray-700 hover:text-gray-900 transition">Features</a>
+                    <a href="/about" className="text-gray-700 hover:text-gray-900 transition">About</a>
+                </nav>
 
-            {!isLoggedIn ? (
-              <>
-                <NavLink
-                  to="/login"
-                  className={({ isActive }) =>
-                    isActive
-                      ? 'block text-indigo-600 font-semibold transition duration-300'
-                      : 'block text-gray-700 hover:text-indigo-600 transition duration-300'
-                  }
-                  onClick={() => setMenuOpen(false)}
-                >
-                  Login
-                </NavLink>
-                <NavLink
-                  to="/register"
-                  className={({ isActive }) =>
-                    isActive
-                      ? 'block bg-indigo-700 text-white px-4 py-2 rounded-md transition duration-300'
-                      : 'block bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition duration-300'
-                  }
-                  onClick={() => setMenuOpen(false)}
-                >
-                  Sign Up
-                </NavLink>
-              </>
-            ) : (
-              <NavLink
-                to="/welcome"
-                className={({ isActive }) =>
-                  isActive
-                    ? 'block text-indigo-600 font-semibold transition duration-300'
-                    : 'block text-gray-700 hover:text-indigo-600 transition duration-300'
-                }
-                onClick={() => setMenuOpen(false)}
-              >
-                Profile
-              </NavLink>
-            )}
-          </div>
-        )}
-      </nav>
-    </div>
-  );
-};
+                {/* Icons */}
+                <div className="flex items-center space-x-4">
+                    <button className="text-gray-600 hover:text-gray-900">
+                        <i className="zmdi zmdi-search text-xl"></i>
+                    </button>
+                    <button onClick={handlNavigate} className="text-gray-600 hover:text-gray-900 relative">
+                        <i className="zmdi zmdi-shopping-cart text-2xl"></i>
+                        {cartItemCount > 0 && (
+                            <span className="absolute top-[-5px] left-4 bg-red-500 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">
+                                {cartItemCount}
+                            </span>
+                        )}
+                    </button>
+                    <button onClick={handlNavigateLogin} className="text-gray-600 hover:text-gray-900 relative">
+                        <i className="ri-user-line text-2xl"></i>
+                    </button>
+                </div>
 
-export default Navbar;
+                {/* Mobile Menu Button */}
+                <button className="lg:hidden text-gray-600">
+                    <i className="zmdi zmdi-menu text-2xl"></i>
+                </button>
+            </div>
+
+            {/* Mobile Menu */}
+            <div className="lg:hidden bg-gray-100">
+                <ul className="flex flex-col space-y-2 p-4">
+                    <li><a href="/" className="text-gray-700 hover:text-gray-900 transition">Home</a></li>
+                    <li><a href="/product" className="text-gray-700 hover:text-gray-900 transition">Shop</a></li>
+                    <li><a href="/" className="text-gray-700 hover:text-gray-900 transition">Features</a></li>
+                    <li><a href="/" className="text-gray-700 hover:text-gray-900 transition">Blog</a></li>
+                    <li><a href="/about" className="text-gray-700 hover:text-gray-900 transition">About</a></li>
+                    <li><a href="/contact" className="text-gray-700 hover:text-gray-900 transition">Contact</a></li>
+                </ul>
+            </div>
+            <ToastContainer/>
+        </header>
+    )
+}
+
+export default Navbar

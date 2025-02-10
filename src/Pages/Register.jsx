@@ -1,161 +1,238 @@
-import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-
+import axios from 'axios'
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { toast, ToastContainer } from 'react-toastify'
 
 const Register = () => {
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [cpassword, setCpassword] = useState('');
-  const [user, setUser] = useState();
- const navigate = useNavigate()
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    street: '',
+    city: '',
+    country: '',
+    password: '',
+    confirmPassword: ''
+  })
+
+  const [users, setUsers] = useState(null)
+
+  const navigate = useNavigate()
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    })
+  }
 
   useEffect(() => {
-    fetch("http://localhost:3001/users", {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' }
-    })
-      .then((res) => res.json())
-      .then((data) => setUser(data))
-  }, []);
-
-  const handleRegister = (e) => {
-    e.preventDefault();
-    const newUser = { username, email, password, cpassword };
-
-    const findMail = user.find((u) => u.email === email)
-
-    if (!findMail) {
-      if (password === cpassword) {
-        fetch("http://localhost:3001/users", {
-          method: "POST",
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newUser),
-        })
-          .then(response => {
-            if (response.ok) {
-              setUsername('');
-              setEmail('');
-              setPassword('');
-              setCpassword('');
-              toast.success("Registration Successful");
-              navigate('/login')
-            } else {
-              toast.error('Registration failed. Please try again.');
-            }
-          })
-      } else {
-        toast.error("PassWord Do Not Match")
+    try {
+      const fetchData = async () => {
+        const response = await axios.get('http://localhost:3001/users')
+        setUsers(response.data)
       }
-    } else {
-      toast.error("Email ALredy Exists")
+      fetchData()
+    } catch (error) {
+      console.error(error);
     }
+  }, [])
 
+  const handleSubmitForm = async (e) => {
+    e.preventDefault();
 
+    try {
+      if (formData.password === formData.confirmPassword) {
+        const checkUser = users.find((u) => u.email === formData.email)
+        if (!checkUser) {
+          await axios.post('http://localhost:3001/users', {
+            ...formData
+          });
+          toast.success("Register successfully!", {
+            position: "bottom-right",
+          });
 
+          setTimeout(() => {
+            navigate('/login')
+          }, 3000);
+
+        } else {
+          toast.warning("User Already Exist...", {
+            position: "bottom-right",
+          });
+        }
+      } else {
+        toast.error("Passwords do not match", {
+          position: "bottom-right",
+        });
+      }
+    } catch (error) {
+      toast.error("Error posting data:", error);
+      toast.error("Failed to submit the form. Please try again.");
+    }
   };
 
   return (
-    <section className="bg-gray-50 dark:bg-gray-900">
-      <div className="flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0">
-        <div className="w-full max-w-md bg-white rounded-lg shadow-lg dark:bg-gray-800 dark:border dark:border-gray-700">
-          <div className="p-8 space-y-4 md:space-y-6">
-            <h1 className="text-2xl font-semibold leading-tight tracking-tight text-gray-900 dark:text-white">
-              Create your account
-            </h1>
-            <form onSubmit={handleRegister} className="space-y-4 md:space-y-6" action="#">
-              <div>
-                <label
-                  htmlFor="username"
-                  className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                >
-                  Username
-                </label>
-                <input
-                  type="text"
-                  name="username"
-                  id="username"
-                  className="bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600 block w-full p-3 transition duration-200 ease-in-out dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                  placeholder="your_username"
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                />
+    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-2xl mx-auto">
+        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 md:p-8">
+          <h2 className="text-2xl md:text-3xl font-bold text-center text-gray-900 mb-8">
+            Create an Account
+          </h2>
+
+          <form onSubmit={handleSubmitForm} className="space-y-6">
+            {/* Form Grid Container */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+              {/* Left Column */}
+              <div className="space-y-4">
+                {/* Full Name */}
+                <div>
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    onChange={handleChange}
+                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm px-4 py-3"
+                    placeholder="Enter Your name"
+                  />
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    onChange={handleChange}
+                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm px-4 py-3"
+                    placeholder="you@example.com"
+                  />
+                </div>
+
+                {/* Password */}
+                <div>
+                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    onChange={handleChange}
+                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm px-4 py-3"
+                    placeholder="Enter Your Password"
+                  />
+                </div>
+
+                {/* Confirm Password */}
+                <div>
+                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                    Confirm Password
+                  </label>
+                  <input
+                    type="password"
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    onChange={handleChange}
+                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm px-4 py-3"
+                    placeholder="Enter Your Confirm Password "
+                  />
+                </div>
               </div>
-              <div>
-                <label
-                  htmlFor="email"
-                  className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                >
-                  Your email
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  id="email"
-                  className="bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600 block w-full p-3 transition duration-200 ease-in-out dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                  placeholder="name@company.com"
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
+
+              {/* Right Column */}
+              <div className="space-y-4">
+                {/* Phone */}
+                <div>
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    id="phone"
+                    name="phone"
+                    onChange={handleChange}
+                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm px-4 py-3"
+                    placeholder="+91 91036027262"
+                  />
+                </div>
+
+                {/* Street Address */}
+                <div>
+                  <label htmlFor="street" className="block text-sm font-medium text-gray-700 mb-1">
+                    Street Address
+                  </label>
+                  <input
+                    type="text"
+                    id="street"
+                    name="street"
+                    onChange={handleChange}
+                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm px-4 py-3"
+                    placeholder="123 Main St"
+                  />
+                </div>
+
+                {/* City */}
+                <div>
+                  <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
+                    City
+                  </label>
+                  <input
+                    type="text"
+                    id="city"
+                    name="city"
+                    onChange={handleChange}
+                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm px-4 py-3"
+                    placeholder="Ahmedabad"
+                  />
+                </div>
+
+                {/* Country */}
+                <div>
+                  <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
+                    Country
+                  </label>
+                  <input
+                    type="text"
+                    id="country"
+                    name="country"
+                    onChange={handleChange}
+                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm px-4 py-3"
+                    placeholder="Gujarat"
+                  />
+                </div>
               </div>
-              <div>
-                <label
-                  htmlFor="password"
-                  className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                >
-                  Password
-                </label>
-                <input
-                  type="password"
-                  name="password"
-                  id="password"
-                  placeholder="••••••••"
-                  className="bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600 block w-full p-3 transition duration-200 ease-in-out dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="confirm-password"
-                  className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                >
-                  Confirm Password
-                </label>
-                <input
-                  type="password"
-                  name="confirm-password"
-                  id="confirm-password"
-                  placeholder="••••••••"
-                  className="bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600 block w-full p-3 transition duration-200 ease-in-out dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                  onChange={(e) => setCpassword(e.target.value)}
-                  required
-                />
-              </div>
+            </div>
+
+            {/* Submit Button */}
+            <div className="pt-4">
               <button
                 type="submit"
-                className="w-full text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 transition duration-200 ease-in-out text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 text-sm font-medium"
               >
-                Register
+                Create Account
               </button>
-              <p className="text-sm font-light text-gray-500 dark:text-gray-400">
-                Already have an account?{" "}
-                <Link
-                  to="/login"
-                  className="font-medium text-blue-600 hover:underline dark:text-blue-500"
-                >
-                  Sign in
-                </Link>
-              </p>
-            </form>
-          </div>
+            </div>
+
+            {/* Login Link */}
+            <p className="text-center text-sm text-gray-600 mt-4">
+              Already have an account?{' '}
+              <a href="/login" className="font-medium text-blue-600 hover:text-blue-500">
+                Sign in
+              </a>
+            </p>
+          </form>
         </div>
       </div>
-      <ToastContainer position="bottom-right" />
-    </section>
-  );
-};
+      <ToastContainer/>
+    </div>
+  )
+}
 
-export default Register;
+export default Register
